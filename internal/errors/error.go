@@ -5,4 +5,5 @@ import "errors"
 var (
 	ErrNoPath      = errors.New("path required")
 	ErrInvalidArgs = errors.New("invalid number of arguments")
+	ErrInvalidCmd  = errors.New("unrecognized command")
 )

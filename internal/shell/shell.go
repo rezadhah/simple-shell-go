@@ -12,15 +12,15 @@ import (
 )
 
 type Store struct {
-	allowedCommands map[string]struct{}
-	guard           *guard.Guardian
+	guard *guard.Guardian
+	cmds  map[string]command.Command
 }
 
 func NewShell() *Store {
 	g := guard.NewGuard()
 	store := &Store{
-		allowedCommands: make(map[string]struct{}),
-		guard:           g,
+		guard: g,
+		cmds:  make(map[string]command.Command),
 	}
 
 	store.init()
@@ -29,7 +29,10 @@ func NewShell() *Store {
 
 func (s *Store) init() {
 	for _, cmd := range command.AllowedCommands() {
-		s.allowedCommands[cmd] = struct{}{}
+		cmdObj, err := command.Factory(cmd)
+		if err == nil {
+			s.cmds[cmd] = cmdObj
+		}
 	}
 }
 
@@ -52,25 +55,24 @@ func (s *Store) InputMode() error {
 
 func (s *Store) GetAllowedCommands() []string {
 	cmds := make([]string, 0)
-	for k, _ := range s.allowedCommands {
-		cmds = append(cmds, k)
-	}
+	cmds = append(cmds, command.AllowedCommands()...)
 	return cmds
 }
 
 func (s *Store) execInput(input string) error {
 	input = strings.TrimSuffix(input, "\n")
 	args := strings.Split(input, " ")
-
 	if err := s.guard.Guard(args...); err != nil {
 		return err
 	}
 
+	cmdExecutor, ok := s.cmds[args[0]]
+	if ok {
+		return cmdExecutor.Execute(args...)
+	}
 	switch args[0] {
-	case command.COMMAND_CD:
-		return os.Chdir(args[1])
-	case command.COMMAND_EXIT:
-		os.Exit(0)
+	case command.COMMAND_EMPTY:
+		return nil
 	default:
 		return runCommandUsingBinary(args...)
 	}

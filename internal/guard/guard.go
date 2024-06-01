@@ -14,7 +14,11 @@ func NewGuard() *Guardian {
 }
 
 func (g *Guardian) Guard(args ...string) error {
-	if numArgs, _ := g.cmds[args[0]]; numArgs != len(args) {
+	if len(args) == 1 && args[0] == command.COMMAND_EMPTY {
+		return nil
+	}
+
+	if numArgs, ok := g.cmds[args[0]]; ok && numArgs != len(args) {
 		return errors.ErrInvalidArgs
 	}
 
