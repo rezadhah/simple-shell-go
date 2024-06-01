@@ -19,5 +19,10 @@ var _ = Describe("Test CD Command", Label("CD"), func() {
 			err := cdCommand.Execute("cd")
 			Expect(err).To(MatchError(errors.ErrNoPath))
 		})
+
+		It("should run with no error if path was passed into arguments", func() {
+			err := cdCommand.Execute("cd", "..")
+			Expect(err).To(BeNil())
+		})
 	})
 })
