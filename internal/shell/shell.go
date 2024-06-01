@@ -8,16 +8,19 @@ import (
 	"strings"
 
 	"github.com/rezadhah/shell/internal/command"
-	"github.com/rezadhah/shell/internal/errors"
+	"github.com/rezadhah/shell/internal/guard"
 )
 
 type Store struct {
 	allowedCommands map[string]struct{}
+	guard           *guard.Guardian
 }
 
 func NewShell() *Store {
+	g := guard.NewGuard()
 	store := &Store{
 		allowedCommands: make(map[string]struct{}),
+		guard:           g,
 	}
 
 	store.init()
@@ -41,7 +44,7 @@ func (s *Store) InputMode() error {
 		}
 
 		// Handle the execution of the input.
-		if err = execInput(input); err != nil {
+		if err = s.execInput(input); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 	}
@@ -55,16 +58,16 @@ func (s *Store) GetAllowedCommands() []string {
 	return cmds
 }
 
-func execInput(input string) error {
+func (s *Store) execInput(input string) error {
 	input = strings.TrimSuffix(input, "\n")
 	args := strings.Split(input, " ")
 
+	if err := s.guard.Guard(args...); err != nil {
+		return err
+	}
+
 	switch args[0] {
 	case command.COMMAND_CD:
-		if len(args) < 2 {
-			return errors.ErrNoPath
-		}
-
 		return os.Chdir(args[1])
 	case command.COMMAND_EXIT:
 		os.Exit(0)
